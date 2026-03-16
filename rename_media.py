@@ -45,7 +45,8 @@ def extract_metadata_from_jpg(file_path):
     """Extract date taken and camera model from JPG file using exifread."""
     try:
         with open(file_path, 'rb') as f:
-            tags = exifread.process_file(f)
+            # stop_tag stops parsing once date is found, details=False skips thumbnails/binary data
+            tags = exifread.process_file(f, stop_tag='DateTimeOriginal', details=False)
             
         # Get date taken
         date_taken = None
@@ -119,10 +120,9 @@ def parse_date_string(date_string):
             return None
 
 
-def extract_video_metadata(file_path):
+def extract_video_metadata(file_path, shell):
     """Extract creation date from video file using Shell.Application."""
     try:
-        shell = win32com.client.Dispatch("Shell.Application")
         folder_path = os.path.dirname(os.path.abspath(file_path))
         file_name = os.path.basename(file_path)
         
@@ -304,6 +304,9 @@ Examples:
         adjustments = load_date_adjustments(target_dir)
         if adjustments:
             print(f"Loaded date adjustments for: {', '.join(adjustments.keys())}")
+
+        # Instantiate Shell.Application once for all video metadata lookups
+        shell = win32com.client.Dispatch("Shell.Application")
         # Get all supported files in target directory, using a set to avoid
         # duplicates from case-insensitive matching on Windows (e.g. *.jpg and *.JPG)
         photo_extensions = ["jpg", "heic"]
@@ -356,10 +359,7 @@ Examples:
                     if date_taken_string:
                         date = parse_date_string(date_taken_string)
                 elif file_extension in ['mp4', 'avi', 'mkv', 'mov', 'wmv']:
-                    # For videos, extract creation date
-                    date = extract_video_metadata(file_path)
-                    # Camera model detection for videos is limited, but we can try
-                    # Most video metadata doesn't include camera model reliably
+                    date = extract_video_metadata(file_path, shell)
                     
                 if not date:
                     print(f"Could not extract date from {file_path}")
