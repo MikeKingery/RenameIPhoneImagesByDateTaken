@@ -1,0 +1,12 @@
+# Camera date adjustment file for rename_media.py
+# One camera model per line, pipe-separated from adjustments.
+# Only specify the fields you need; omitted fields default to 0.
+# Negative values are supported (e.g. hours=-7).
+#
+# Format:
+#   CameraModel | years=0 months=0 days=0 hours=0 minutes=0 seconds=0
+#
+# Examples:
+HERO7 Black | years=4 months=8 days=8 hours=-8 minutes=20 seconds=0
+iPhone 13 Pro | hours=-7
+DSC-RX100M7 | hours=5 minutes=30
