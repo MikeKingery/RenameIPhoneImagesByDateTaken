@@ -14,13 +14,12 @@ Usage:
     python rename_media.py [directory]
     
 Examples:
-    python rename_media.py                    # Process current directory
+    python rename_media.py                   # Process current directory
     python rename_media.py "C:/Photos"       # Process specific directory
     python rename_media.py ../vacation_pics  # Process relative path
 """
 
 import os
-import glob
 import sys
 import argparse
 from datetime import datetime, timedelta
@@ -268,7 +267,7 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python rename_media.py                    # Process current directory
+  python rename_media.py                   # Process current directory
   python rename_media.py "C:/Photos"       # Process specific directory
   python rename_media.py ../vacation_pics  # Process relative path
         """
@@ -283,7 +282,9 @@ Examples:
     args = parser.parse_args()
     
     # Change to target directory
-    target_dir = os.path.abspath(args.directory)
+    # Normalize the path: replace backslashes, strip trailing slashes
+    normalized = args.directory.replace('\\', '/').rstrip('/')
+    target_dir = os.path.abspath(normalized)
     if not os.path.exists(target_dir):
         print(f"Error: Directory '{target_dir}' does not exist.")
         return
@@ -303,19 +304,27 @@ Examples:
         adjustments = load_date_adjustments(target_dir)
         if adjustments:
             print(f"Loaded date adjustments for: {', '.join(adjustments.keys())}")
-        # Get all supported files in target directory
-        photo_extensions = ["*.jpg", "*.JPG", "*.heic", "*.HEIC"]
-        video_extensions = ["*.mp4", "*.MP4", "*.avi", "*.AVI", "*.mkv", "*.MKV", 
-                           "*.mov", "*.MOV", "*.wmv", "*.WMV"]
-        
+        # Get all supported files in target directory, using a set to avoid
+        # duplicates from case-insensitive matching on Windows (e.g. *.jpg and *.JPG)
+        photo_extensions = ["jpg", "heic"]
+        video_extensions = ["mp4", "avi", "mkv", "mov", "wmv"]
+
+        seen = set()
         photo_files = []
         video_files = []
-        
-        for pattern in photo_extensions:
-            photo_files.extend(glob.glob(pattern))
-        
-        for pattern in video_extensions:
-            video_files.extend(glob.glob(pattern))
+
+        for f in Path(".").iterdir():
+            if not f.is_file():
+                continue
+            lower = f.name.lower()
+            if lower in seen:
+                continue
+            seen.add(lower)
+            ext = f.suffix.lower().lstrip(".")
+            if ext in photo_extensions:
+                photo_files.append(f.name)
+            elif ext in video_extensions:
+                video_files.append(f.name)
         
         all_files = photo_files + video_files
         
